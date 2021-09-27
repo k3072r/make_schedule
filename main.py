@@ -38,7 +38,8 @@ while flag:
                     schedule[teacher_indice][1][i][j][1] = ["lock", "lock", "lock"]
                 flag = True
     
-
+#高3以外を、スケジュールに余裕のない者から配置
+#入れられるコマが見つからない場合は、そのlessonを一旦evacuationsに退避
 for student in sorted_free_count:        
     flag = True
     while flag:
@@ -52,7 +53,7 @@ for student in sorted_free_count:
                 flag = True
                 break
 
-
+#evacuationsの中身を配置していく
 for evacuation in evacuations:
 
     name = evacuation[1]
@@ -81,9 +82,19 @@ for evacuation in evacuations:
             b1 = make.rand_move(i, j, 0, teacher_indice, evacuation, schedule, students, teachers)
             b2 = make.rand_move(i, j, 1, teacher_indice, evacuation, schedule, students, teachers)
 
-        if teachers[teacher_indice][1][i][j] != "lock":
-            h = 0
-            if schedule[teacher_indice][1][i][j][0] != ["free"]
+            if b1 & b2:
+                make.place(evacuation, schedule, students, teachers)
+
+        else:
+            if teachers[teacher_indice][1][i][j] != "lock":
+                h = 0
+                if schedule[teacher_indice][1][i][j][0] != ["free", "free", "free"]:
+                    h = 1
+
+                b1 = make.rand_move(i, j, h, teacher_indice, lessons, schedule, students, teachers)
+                if b1:
+                    make.place(evacuation, schedule, students, teachers)
+                    
 
 
 

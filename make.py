@@ -55,9 +55,17 @@ def teacher_attend(i, j, indice, teachers):
     elif teachers[indice][1][i][j] == "lock":
         raise ValueError("locked cell! In schedule, this cell is supposed to free")
 
+#名前と科目からlessons内を検索してインデックス番号を返す
+def search_lesson(name, subject, lessons):
+    for lesson in lessons:
+        if lesson[1] == name & lesson[2] == subject:
+            indice = lessons.index(lesson)
+            return indice
+
+
 
 #lessonを1コマ登録
-def place(lesson, schedule, students, teachers, attends):
+def place(lesson, schedule, students, teachers):
     #lesson = [学年, 生徒名, 科目名, コマ数, [希望講師1, 希望講師2, ...]]
 
     #生徒のインデックス取得
@@ -111,7 +119,7 @@ def place(lesson, schedule, students, teachers, attends):
             schedule[teacher_indice][1][i][j][0][0] = lesson[0]
             schedule[teacher_indice][1][i][j][0][1] = lesson[1]
             schedule[teacher_indice][1][i][j][0][2] = lesson[2]
-            teacher_attend(i, j, teacher_indice, teachers, attends)
+            teacher_attend(i, j, teacher_indice, teachers)
             students[student_indice][1][i][j] = lesson[2]
             lesson[3] -= 1
             flag = False
@@ -123,7 +131,7 @@ def place(lesson, schedule, students, teachers, attends):
             schedule[teacher_indice][1][i][j][0][0] = lesson[0]
             schedule[teacher_indice][1][i][j][0][1] = lesson[1]
             schedule[teacher_indice][1][i][j][0][2] = lesson[2]
-            teacher_attend(i, j, teacher_indice, teachers, attends)
+            teacher_attend(i, j, teacher_indice, teachers)
             students[student_indice][1][i][j] = lesson[2]
             lesson[3] -= 1
             flag = False
@@ -169,21 +177,25 @@ def move_for_high3(cur_i, cur_j, cur_t_i, nex_i, nex_j, nex_t_i, student_indice,
 
 
 
-def rand_move(cur_i, cur_j, cur_h, cur_t_i, lesson, schedule, students, teachers):
+def rand_move(cur_i, cur_j, cur_h, cur_t_i, lessons, schedule, students, teachers):
     #lesson = [学年, 生徒名, 科目名, コマ数, [希望講師1, 希望講師2, ...]]
 
+    name = schedule[cur_t_i][1][cur_i][cur_j][cur_h][1]
+    subject = schedule[cur_t_i][1][cur_i][cur_j][cur_h][2]
+
     high3 = False
-    if lesson[1] == "高3":
+    if schedule[cur_t_i][1][cur_i][cur_j][cur_h][0] == "高3":
         high3 = True
 
     moved = False
 
     #生徒のインデックス取得
-    student_indice = get_index(lesson[1], students)
+    student_indice = get_index(name, students)
 
     #生徒の空きコマ取得
     student_free_list = get_student_free_list(students[student_indice][1])
 
+    lesson = search_lesson(name, subject, lessons)
     hope = lesson[4]
     for teacher in hope:
 
