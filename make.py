@@ -58,7 +58,7 @@ def teacher_attend(i, j, indice, teachers):
 #名前と科目からlessons内を検索してインデックス番号を返す
 def search_lesson(name, subject, lessons):
     for lesson in lessons:
-        if lesson[1] == name & lesson[2] == subject:
+        if lesson[1] == name and lesson[2] == subject:
             indice = lessons.index(lesson)
             return indice
 
