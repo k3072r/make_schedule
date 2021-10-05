@@ -1,3 +1,4 @@
+from getxl import student_free_count
 import random
 import copy
 import teacher as te
@@ -12,7 +13,7 @@ def get_index(name, lists):
     return indice
 
 #i日目j番目のコマがstudentから見て空いているか確認
-def student_judge(i, j, indice, students):
+def student_judge_free(i, j, indice, students):
     if students[indice][1][i][j] == "free":
         return True
     elif students[indice][1][i][j] == "lock":
@@ -62,6 +63,9 @@ def search_lesson(name, subject, lessons):
             indice = lessons.index(lesson)
             return indice
 
+#コマに授業が入っていればTrue
+def exist_lesson(frame):
+    return not (frame == ["free", "free", "free"] or frame == ["lock", "lock", "lock"])
 
 
 #lessonを1コマ登録
@@ -109,7 +113,7 @@ def place(lesson, schedule, students, teachers):
 
         #intersectionのうちランダムな要素を取得
         rndm = random.random()
-        k = int((rndm * 1000000) % intersec_num)
+        k = int((rndm * 1000000000) % intersec_num)
         (i, j) = intersection[k]
 
         #上のコマから優先で登録
@@ -177,7 +181,7 @@ def move_for_high3(cur_i, cur_j, cur_t_i, nex_i, nex_j, nex_t_i, student_indice,
 
 
 
-def rand_move(cur_i, cur_j, cur_h, cur_t_i, lessons, schedule, students, teachers):
+def random_move(cur_i, cur_j, cur_h, cur_t_i, student_indice, lessons, schedule, students, teachers):
     #lesson = [学年, 生徒名, 科目名, コマ数, [希望講師1, 希望講師2, ...]]
 
     name = schedule[cur_t_i][1][cur_i][cur_j][cur_h][1]
@@ -188,9 +192,6 @@ def rand_move(cur_i, cur_j, cur_h, cur_t_i, lessons, schedule, students, teacher
         high3 = True
 
     moved = False
-
-    #生徒のインデックス取得
-    student_indice = get_index(name, students)
 
     #生徒の空きコマ取得
     student_free_list = get_student_free_list(students[student_indice][1])
@@ -218,7 +219,7 @@ def rand_move(cur_i, cur_j, cur_h, cur_t_i, lessons, schedule, students, teacher
 
         #intersectionのうちランダムな要素を取得
         rndm = random.random()
-        k = int((rndm * 1000000) % intersec_num)
+        k = int((rndm * 1000000000) % intersec_num)
         (i, j) = intersection[k]
 
         #上下どちらのセルに入れるか
@@ -235,3 +236,19 @@ def rand_move(cur_i, cur_j, cur_h, cur_t_i, lessons, schedule, students, teacher
         break
 
     return moved
+
+
+
+
+def exchange(i1, j1, h1, t_indice1, s_indice1, i2, j2, h2, t_indice2, s_indice2, schedule, students):
+    students[s_indice1][1][i1][j1], students[s_indice1][1][i2][j2] = students[s_indice1][1][i2][j2], students[s_indice1][1][i1][j1]
+    students[s_indice2][1][i1][j1], students[s_indice2][1][i2][j2] = students[s_indice2][1][i2][j2], students[s_indice2][1][i1][j1]
+
+    schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
+
+
+
+#片方のみ高3（両方高3ならexchangeを使えばいいので）（1が高3）
+def exchange_for_high3(i1, j1, t_indice1, s_indice1, i2, j2, t_indice2, s_indice2, schedule, students):
+    students[s_indice1][1][i1][j1], students[s_indice1][1][i2][j2] = students[s_indice1][1][i2][j2], students[s_indice1][1][i1][j1]
+    students[s_indice2][1][i1][j1], students[s_indice2][1][i2][j2] = students[s_indice2][1][i2][j2], students[s_indice2][1][i1][j1]

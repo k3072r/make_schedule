@@ -10,6 +10,7 @@ def loss_hoperank(t_name, s_name, subject, lessons):
             return losses
         else:
             losses += loss
+            loss += 1
 
 
 
@@ -40,30 +41,28 @@ def all_loss_hoperank(schedule, lessons):
 
 
 
-def loss_student_sparse(days):
+def loss_student_sparse(day):
     
     a = -1
     b = -1
-    flag = False
-    loss = 10
+    flag = False #その日最初の授業をaに入れたか否か（aがNoneか否か）
+    loss = 1
     losses = 0
 
-    for day in days:
-        for i in range(0, 6):
-            if not (day[i] == "free" or day[i] == "lock"):
-                if flag:
-                    b = i
-                    if b - a == 1:
-                        a = b
-                    else:
-                        losses += loss
-                        break
+    for i in range(7):
+        if not (day[i] == "free" or day[i] == "lock"):
+            if flag:
+                b = i
+                if b - a == 1:
+                    a = b
                 else:
-                    a = i
-                    flag = True
-                # end if
+                    losses += loss
+                    break
+            else:
+                a = i
+                flag = True
             # end if
-        #end for
+        # end if
     #end for
     return losses
 
@@ -72,7 +71,8 @@ def all_loss_student_sparse(students):
     losses = 0
 
     for student in students:
-        losses += loss_student_sparse(student[1])
+        for day in student[1]:
+            losses += loss_student_sparse(day)
 
     return losses
 
@@ -82,16 +82,24 @@ def all_loss_student_sparse(students):
 
 def loss_free_teacher_exist(i, j, teachers):
 
-    loss = 5
+    loss = 1
 
     teacher_num = len(teachers)
+
+    flag_all_lock = True
 
     for indice in range(0, teacher_num):
         if teachers[indice][1][i][j] == "free":
             return 0
-    
+        if teachers[indice][1][i][j] != "lock":
+            flag_all_lock = False
+
     #end for
-    return loss
+
+    if flag_all_lock:
+        return 0
+    else:
+        return loss
 
 
 def all_loss_free_teacher_exist(teachers):

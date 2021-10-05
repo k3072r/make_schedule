@@ -2,7 +2,7 @@ import openpyxl as px
 import random
 import getxl
 import make
-import calc_loss
+import annealing
 
 filepath = "test.xlsm"
 wb = px.load_workbook(filename=filepath, keep_vba=True)
@@ -108,8 +108,8 @@ while loop:
                     #attendかfreeのコマにのみ割り当て可能
                     if teachers[teacher_indice][1][i][j] == "attend" or teachers[teacher_indice][1][i][j] == "free":
                         #割り当て先のコマの授業を移動
-                        b1 = make.rand_move(i, j, 0, teacher_indice, evacuation, schedule, students, teachers)
-                        b2 = make.rand_move(i, j, 1, teacher_indice, evacuation, schedule, students, teachers)
+                        b1 = make.random_move(i, j, 0, teacher_indice, student_indice, evacuation, schedule, students, teachers)
+                        b2 = make.random_move(i, j, 1, teacher_indice, student_indice, evacuation, schedule, students, teachers)
 
                         #移動完了したら、そこにevacuationを割り当て
                         if b1 & b2:
@@ -126,7 +126,7 @@ while loop:
                         if schedule[teacher_indice][1][i][j][0] != ["free", "free", "free"]:
                             h = 1
 
-                        b1 = make.rand_move(i, j, h, teacher_indice, lessons, schedule, students, teachers)
+                        b1 = make.random_move(i, j, h, teacher_indice, student_indice, lessons, schedule, students, teachers)
                         if b1:
                             make.place(evacuation, schedule, students, teachers)
                             moved = True
@@ -142,15 +142,6 @@ while loop:
 
 # end while
 
+(schedule, students) = annealing.simulated_annealing(schedule, students, teachers, lessons)
 
-loss = 0
-
-loss1 = calc_loss.all_loss_hoperank(schedule, lessons)
-loss2 = calc_loss.all_loss_student_sparse(students)
-loss3 = calc_loss.all_loss_free_teacher_exist(teachers)
-
-loss = loss1 + loss2 + loss3
-
-print("loss from hope = " + str(loss1))
-print("loss from sparse = " + str(loss2))
-print("loss from free teacher = " + str(loss3))
+print("hoge")
