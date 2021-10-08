@@ -36,7 +36,7 @@ def get_schedule_free_list(days):
     free_list = []
     for i in range(0, len(days)):
         for j in range(0, 7):
-            if days[i][j][0] == ["free", "free", "free"] or days[i][j][1] == ["free", "free", "free"]:
+            if days[i][j][0] == ["free", "free", "free"] or days[i][j][1] == ["free", "free", "free"]: #1だけで良いと思う
                 free_list.append((i, j))
     return free_list
 
@@ -86,16 +86,6 @@ def place(lesson, schedule, students, teachers):
     #希望講師を前から見ていく
     hope = lesson[4]
     for teacher in hope:
-        
-        """ #講師に空きがあるか確認、ついでにインデックス取得(要最適化)
-        teacher_indice = 0
-        for attend in attends:
-            if attend[0] == teacher:
-                teacher_indice = attends.index(attend)
-                break 
-        #空きがなければcontinue
-        if attends[teacher_indice][1] <= 0:
-            continue """
 
         #講師のインデックス取得
         teacher_indice = get_index(teacher, schedule)
@@ -132,9 +122,9 @@ def place(lesson, schedule, students, teachers):
         #i日目のj番目の下のコマが空
         elif schedule[teacher_indice][1][i][j][1] == ["free", "free", "free"]:
             #登録し諸々のデータを書き換え
-            schedule[teacher_indice][1][i][j][0][0] = lesson[0]
-            schedule[teacher_indice][1][i][j][0][1] = lesson[1]
-            schedule[teacher_indice][1][i][j][0][2] = lesson[2]
+            schedule[teacher_indice][1][i][j][1][0] = lesson[0]
+            schedule[teacher_indice][1][i][j][1][1] = lesson[1]
+            schedule[teacher_indice][1][i][j][1][2] = lesson[2]
             teacher_attend(i, j, teacher_indice, teachers)
             students[student_indice][1][i][j] = lesson[2]
             lesson[3] -= 1
@@ -196,9 +186,9 @@ def random_move(cur_i, cur_j, cur_h, cur_t_i, student_indice, lessons, schedule,
     #生徒の空きコマ取得
     student_free_list = get_student_free_list(students[student_indice][1])
 
-    lesson = search_lesson(name, subject, lessons)
-    hope = lesson[4]
-    for teacher in hope:
+    lesson_indice = search_lesson(name, subject, lessons)
+    hopes = lessons[lesson_indice][4]
+    for teacher in hopes:
 
         #講師のインデックス取得
         teacher_indice = get_index(teacher, schedule)
@@ -252,3 +242,19 @@ def exchange(i1, j1, h1, t_indice1, s_indice1, i2, j2, h2, t_indice2, s_indice2,
 def exchange_for_high3(i1, j1, t_indice1, s_indice1, i2, j2, t_indice2, s_indice2, schedule, students):
     students[s_indice1][1][i1][j1], students[s_indice1][1][i2][j2] = students[s_indice1][1][i2][j2], students[s_indice1][1][i1][j1]
     students[s_indice2][1][i1][j1], students[s_indice2][1][i2][j2] = students[s_indice2][1][i2][j2], students[s_indice2][1][i1][j1]
+
+
+
+def get_not_locked_frames(schedule):
+
+    teacher_num = len(schedule)
+    day_num = len(schedule[0][1])
+    not_locked_frames = []
+
+    for t_indice in range(teacher_num):
+        for i in range(day_num):
+            for j in range(7):
+                if schedule[t_indice][1][i][j][0] != ["lock", "lock", "lock"]:
+                    not_locked_frames.append((t_indice, i, j))
+
+    return not_locked_frames

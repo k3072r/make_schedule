@@ -46,7 +46,7 @@ def loss_student_sparse(day):
     a = -1
     b = -1
     flag = False #その日最初の授業をaに入れたか否か（aがNoneか否か）
-    loss = 1
+    loss = 10
     losses = 0
 
     for i in range(7):
@@ -82,7 +82,7 @@ def all_loss_student_sparse(students):
 
 def loss_free_teacher_exist(i, j, teachers):
 
-    loss = 1
+    loss = 10
 
     teacher_num = len(teachers)
 

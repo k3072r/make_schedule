@@ -3,6 +3,7 @@ import random
 import getxl
 import make
 import annealing
+import calc_loss
 
 filepath = "test.xlsm"
 wb = px.load_workbook(filename=filepath, keep_vba=True)
@@ -126,10 +127,16 @@ while loop:
                         if schedule[teacher_indice][1][i][j][0] != ["free", "free", "free"]:
                             h = 1
 
-                        b1 = make.random_move(i, j, h, teacher_indice, student_indice, lessons, schedule, students, teachers)
+                        if schedule[teacher_indice][1][i][j][h] == ["free", "free", "free"]:
+                            b1 = True
+                        elif schedule[teacher_indice][1][i][j][h] == ["lock", "lock", "lock"]:
+                            b1 = False
+                        else:
+                            b1 = make.random_move(i, j, h, teacher_indice, student_indice, lessons, schedule, students, teachers)
                         if b1:
                             make.place(evacuation, schedule, students, teachers)
                             moved = True
+                            break
                         else:
                             intersection.remove((i, j))
 
@@ -142,6 +149,22 @@ while loop:
 
 # end while
 
-(schedule, students) = annealing.simulated_annealing(schedule, students, teachers, lessons)
+loss1 = calc_loss.all_loss_hoperank(schedule, lessons)
+loss2 = calc_loss.all_loss_student_sparse(students)
+loss3 = calc_loss.all_loss_free_teacher_exist(teachers)
 
-print("hoge")
+print("loss hoperank = " + str(loss1))
+print("loss sparse = " + str(loss2))
+print("loss free_t = " + str(loss3))
+
+(schedule, students, teachers) = annealing.simulated_annealing(schedule, students, teachers, lessons)
+
+print("-----------------")
+
+loss1 = calc_loss.all_loss_hoperank(schedule, lessons)
+loss2 = calc_loss.all_loss_student_sparse(students)
+loss3 = calc_loss.all_loss_free_teacher_exist(teachers)
+
+print("loss hoperank = " + str(loss1))
+print("loss sparse = " + str(loss2))
+print("loss free_t = " + str(loss3))

@@ -1,6 +1,7 @@
 from make import *
 from calc_loss import *
 import random
+from random import choices
 from copy import deepcopy
 from math import exp
 
@@ -10,29 +11,40 @@ from math import exp
 def check_exchange(i1, j1, i2, j2, frame1, frame2, t_indice1, t_indice2, students, lessons, schedule):
 
     #一つ目のコマの情報を取得
-    t_name1 = schedule[t_indice1][0]
     s_name1 = frame1[1]
-    subject1 = frame1[2]
     s_indice1 = get_index(s_name1, students)
-    lesson_indice1 = search_lesson(s_name1, subject1, lessons)
-    hopes1 = lessons[lesson_indice1][4]
 
-    #二つ目のコマの情報を取得
-    t_name2 = schedule[t_indice2][0]
-    s_name2 = frame2[1]
-    subject2 = frame2[2]
-    s_indice2 = get_index(s_name2, students)
-    lesson_indice2 = search_lesson(s_name2, subject2, lessons)
-    hopes2 = lessons[lesson_indice2][4]
+    #交換先のコマが生徒側で空きになっているか
+    if student_judge_free(i2, j2, s_indice1, students):
+            
+        #二つ目のコマの情報を取得
+        s_name2 = frame2[1]
+        s_indice2 = get_index(s_name2, students)
 
-    #授業を交換可能か確認
-    check1 = student_judge_free(i2, j2, s_indice1, students) and student_judge_free(i1, j1, s_indice2, students)
-    check2 = (t_name1 in hopes2) and (t_name2 in hopes1)
+        #交換先のコマが生徒側で空きになっているか
+        if student_judge_free(i1, j1, s_indice2, students):
 
-    if check1 and check2:
-        return (s_indice1, s_indice2)
-    else:
-        return (-1, -1)
+            #空きになっていれば次の処理
+
+            #コマの情報をさらに取得
+            t_name2 = schedule[t_indice2][0] #交換先の講師
+            subject1 = frame1[2]
+            lesson_indice1 = search_lesson(s_name1, subject1, lessons)
+            hopes1 = lessons[lesson_indice1][4]
+
+            #交換先の講師が希望講師に含まれるか確認
+            if t_name2 in hopes1:
+
+                t_name1 = schedule[t_indice1][0]
+                subject2 = frame2[2]
+                lesson_indice2 = search_lesson(s_name2, subject2, lessons)
+                hopes2 = lessons[lesson_indice2][4]
+
+                #交換先の講師が希望講師に含まれるか確認
+                if t_name1 in hopes2:
+                    return (s_indice1, s_indice2)
+        
+    return (-1, -1)
     
 
 
@@ -42,50 +54,43 @@ def check_move(i2, j2, frame1, t_indice2, students, lessons, schedule):
 
     #一つ目のコマの情報を取得
     s_name1 = frame1[1]
-    subject1 = frame1[2]
     s_indice1 = get_index(s_name1, students)
-    lesson_indice1 = search_lesson(s_name1, subject1, lessons)
-    hopes1 = lessons[lesson_indice1][4]
 
-    #二つ目のコマの情報を取得
-    t_name2 = schedule[t_indice2][0]
-    
-    #授業を移動可能か確認
-    check1 = student_judge_free(i2, j2, s_indice1, students)
-    check2 = t_name2 in hopes1
-    #check3 = frame2 == ["free", "free", "free"] #ifのguardに移動
+    #移動先のコマが生徒側で空きになっているか
+    if student_judge_free(i2, j2, s_indice1, students):
 
-    if check1 and check2:
-        return s_indice1
-    else:
-        return -1
+        #コマの情報をさらに取得
+        subject1 = frame1[2]
+        lesson_indice1 = search_lesson(s_name1, subject1, lessons)
+        hopes1 = lessons[lesson_indice1][4]
+
+        #二つ目のコマの情報を取得
+        t_name2 = schedule[t_indice2][0]
+
+        #移動先の講師が希望講師に含まれるか確認
+        if t_name2 in hopes1:
+            return s_indice1
+
+    return -1
+
+
 
 
 #状態を変更する2コマをランダムに選択
-@profile
-def state_to_change(schedule, students, lessons):
-    #要素数
-    teacher_num = len(schedule)
-    day_num = len(schedule[0][1])
+def state_to_change(schedule, students, lessons, candidates, length):
 
     #returnする組が見つかるまでループ
     while True:
 
         #一つ目のコマをランダムに選択
-        rndm = random.random()
-        t_indice1 = int((rndm * 1000000000) % teacher_num)
-        i1 = int((rndm * 1000000000) % day_num)
-        j1 = int((rndm * 1000000000) % 7)
-        h1 = int((rndm * 1000000000) % 2)
+        rndm1 = random.random()
+        k = int((rndm1 * 1000000000000) % length)
+        (t_indice1, i1, j1) = candidates[k]
 
         #二つ目のコマをランダムに選択
-        rndm = random.random()
-        t_indice2 = int((rndm * 1000000000) % teacher_num)
-        i2 = int((rndm * 1000000000) % day_num)
-        j2 = int((rndm * 1000000000) % 7)
-        h2 = int((rndm * 1000000000) % 2)
-
-        
+        rndm2 = random.random()
+        k = int((rndm2 * 1000000000000) % length)
+        (t_indice2, i2, j2) = candidates[k]
 
         #高3を含むか否かで場合分け
         #両方高3の場合
@@ -97,7 +102,7 @@ def state_to_change(schedule, students, lessons):
             s_indice1, s_indice2 = check_exchange(i1, j1, i2, j2, frame1, frame2, t_indice1, t_indice2, students, lessons, schedule)
 
             #交換可能ならそのコマを返す（タプルの最後の要素で1要素の交換であることを指定）
-            if s_indice1 != -1:
+            if s_indice1 != -1 and s_indice2 != -1:
                 return (i1, j1, 0, t_indice1, s_indice1, i2, j2, 0, t_indice2, s_indice2, 0)
 
 
@@ -119,7 +124,7 @@ def state_to_change(schedule, students, lessons):
                     s_indice3 = check_move(i1, j1, frame3, t_indice1, students, lessons, schedule)
 
                     #交換可能ならそのコマを返す（タプルの最後の要素で2要素の交換であることを指定）
-                    if s_indice1 != -1 and s_indice3 != -1:
+                    if s_indice1 != -1 and s_indice2 != -1 and s_indice3 != -1:
                         return (i1, j1, 0, t_indice1, s_indice1, i2, j2, 0, t_indice2, s_indice2, 2)
 
                 #上しか授業がない場合
@@ -127,7 +132,7 @@ def state_to_change(schedule, students, lessons):
                     s_indice1, s_indice2 = check_exchange(i1, j1, i2, j2, frame1, frame2, t_indice1, t_indice2, students, lessons, schedule)
 
                     #交換可能ならそのコマを返す（タプルの最後の要素で高3を含む1要素の交換であることを指定）
-                    if s_indice1 != -1:
+                    if s_indice1 != -1 and s_indice2 != -1:
                         return (i1, j1, 0, t_indice1, s_indice1, i2, j2, 0, t_indice2, s_indice2, 1)
 
             #高3側しか授業がない場合
@@ -156,16 +161,16 @@ def state_to_change(schedule, students, lessons):
                     s_indice1, s_indice2 = check_exchange(i1, j1, i2, j2, frame1, frame2, t_indice1, t_indice2, students, lessons, schedule)
                     s_indice3 = check_move(i2, j2, frame3, t_indice2, students, lessons, schedule)
 
-                    #交換可能ならそのコマを返す（タプルの最後の要素で2要素の交換であることを指定）
-                    if s_indice1 != -1 and s_indice3 != -1:
-                        return (i1, j1, 0, t_indice1, s_indice1, i2, j2, 0, t_indice2, s_indice2, 2)
+                    #交換可能ならそのコマを返す（タプルの最後の要素で2要素の交換であることを指定）（高3側が返り値の前に来るように）
+                    if s_indice1 != -1 and s_indice2 != -1 and s_indice3 != -1:
+                        return (i2, j2, 0, t_indice2, s_indice2, i1, j1, 0, t_indice1, s_indice1, 2)
 
                 #上しか授業がない場合
                 else:
                     s_indice1, s_indice2 = check_exchange(i1, j1, i2, j2, frame1, frame2, t_indice1, t_indice2, students, lessons, schedule)
 
-                    #交換可能ならそのコマを返す（タプルの最後の要素で高3を含む1要素の交換であることを指定）
-                    if s_indice1 != -1:
+                    #交換可能ならそのコマを返す（タプルの最後の要素で高3を含む1要素の交換であることを指定）（高3側が返り値の前に来るように）
+                    if s_indice1 != -1 and s_indice2 != -1:
                         return (i1, j1, 0, t_indice1, s_indice1, i2, j2, 0, t_indice2, s_indice2, 1)
 
             #高3側しか授業がない場合
@@ -180,6 +185,9 @@ def state_to_change(schedule, students, lessons):
         #どちらも高3でない場合
         else:
 
+            h1 = int((random.random() * 1000000000) % 2)
+            h2 = int((random.random() * 1000000000) % 2)
+
             #選択したコマ
             frame1 = schedule[t_indice1][1][i1][j1][h1]
             frame2 = schedule[t_indice2][1][i2][j2][h2]
@@ -190,11 +198,15 @@ def state_to_change(schedule, students, lessons):
                 s_indice1, s_indice2 = check_exchange(i1, j1, i2, j2, frame1, frame2, t_indice1, t_indice2, students, lessons, schedule)
 
                 #交換可能ならそのコマを返す（タプルの最後の要素で1要素の交換であることを指定）
-                if s_indice1 != -1:
+                if s_indice1 != -1 and s_indice2 != -1:
                     return (i1, j1, h1, t_indice1, s_indice1, i2, j2, h2, t_indice2, s_indice2, 0)
 
             #frame1のみ授業が入っている場合
             elif exist_lesson(frame1) and frame2 == ["free", "free", "free"]:
+
+                #上が空いているなら上に移動させたい
+                if schedule[t_indice2][1][i2][j2][0] == ["free", "free", "free"]:
+                    h2 = 0
 
                 s_indice1 = check_move(i2, j2, frame1, t_indice2, students, lessons, schedule)
 
@@ -204,6 +216,10 @@ def state_to_change(schedule, students, lessons):
 
             #frame2のみ授業が入っている場合
             elif frame1 == ["free", "free", "free"] and exist_lesson(frame2):
+
+                #上が空いているなら上に移動させたい
+                if schedule[t_indice1][1][i1][j1][0] == ["free", "free", "free"]:
+                    h1 = 0
 
                 s_indice2 = check_move(i1, j1, frame2, t_indice1, students, lessons, schedule)
 
@@ -266,20 +282,28 @@ def part_of_loss_free_teacher(i1, j1, i2, j2, teachers):
 
 def simulated_annealing(schedule, students, teachers, lessons):
 
-    temp_max = 100
-    temp_min = 10
-    interation = 50
-    temp_diff = 0.95
+    temp_max = 3000
+    temp_min = 0.1
+    interation = 1000
+    temp_diff = 0.99
     temp = temp_max
+
+    candidates = get_not_locked_frames(schedule)
+    length = len(candidates)
+
+    all = 0
+    accepted = 0
 
     while temp >= temp_min:
 
-        print(temp)
+        print(str(temp) + " = " + str(all_loss_hoperank(schedule, lessons)))
 
         for count in range(interation):
 
+            all += 1
+
             #交換（移動）候補の取得
-            (i1, j1, h1, t_indice1, s_indice1, i2, j2, h2, t_indice2, s_indice2, flag) = state_to_change(schedule, students, lessons)
+            (i1, j1, h1, t_indice1, s_indice1, i2, j2, h2, t_indice2, s_indice2, flag) = state_to_change(schedule, students, lessons, candidates, length)
 
             t_name1 = schedule[t_indice1][0]
             t_name2 = schedule[t_indice2][0]
@@ -296,13 +320,19 @@ def simulated_annealing(schedule, students, teachers, lessons):
                 st1_2 = students[s_indice1][1][i2]
                 next_st1_1 = deepcopy(st1_1)
                 next_st1_2 = deepcopy(st1_2)
-                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+                
 
                 st2_1 = students[s_indice2][1][i1]
                 st2_2 = students[s_indice2][1][i2]
                 next_st2_1 = deepcopy(st2_1)
                 next_st2_2 = deepcopy(st2_2)
-                next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
+
+                if i1 == i2:
+                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                    next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
+                else:
+                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+                    next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
 
                 #teachersは遷移後も変化なし
 
@@ -313,20 +343,22 @@ def simulated_annealing(schedule, students, teachers, lessons):
 
                 #良化する場合は無条件に遷移
                 if loss_diff >= 0:
-                    frame1, frame2 = frame2, frame1
-                    st1_1 = next_st1_1
-                    st1_2 = next_st1_2
-                    st2_1 = next_st2_1
-                    st2_2 = next_st2_2
+                    schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
+                    students[s_indice1][1][i1] = next_st1_1
+                    students[s_indice1][1][i2] = next_st1_2
+                    students[s_indice2][1][i1] = next_st2_1
+                    students[s_indice2][1][i2] = next_st2_2
+                    accepted += 1
 
                 #そうでなければ、遷移するか否か、tempに基づき確率的に決定
                 else:
                     if exp(loss_diff / temp) > random.random():
-                        frame1, frame2 = frame2, frame1
-                        st1_1 = next_st1_1
-                        st1_2 = next_st1_2
-                        st2_1 = next_st2_1
-                        st2_2 = next_st2_2
+                        schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
+                        students[s_indice1][1][i1] = next_st1_1
+                        students[s_indice1][1][i2] = next_st1_2
+                        students[s_indice2][1][i1] = next_st2_1
+                        students[s_indice2][1][i2] = next_st2_2
+                        accepted += 1
 
             #高3を含む1要素の交換
             elif flag == 1:
@@ -340,13 +372,18 @@ def simulated_annealing(schedule, students, teachers, lessons):
                 st1_2 = students[s_indice1][1][i2]
                 next_st1_1 = deepcopy(st1_1)
                 next_st1_2 = deepcopy(st1_2)
-                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
 
                 st2_1 = students[s_indice2][1][i1]
                 st2_2 = students[s_indice2][1][i2]
                 next_st2_1 = deepcopy(st2_1)
                 next_st2_2 = deepcopy(st2_2)
-                next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
+
+                if i1 == i2:
+                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                    next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
+                else:
+                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+                    next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
 
                 #teachersは遷移後も変化なし
 
@@ -357,22 +394,23 @@ def simulated_annealing(schedule, students, teachers, lessons):
 
                 #良化する場合は無条件に遷移（lockとfreeの入れ替えも行う）
                 if loss_diff >= 0:
-                    frame1, frame2 = frame2, frame1
-                    schedule[t_indice1][1][i1][j1][1], schedule[t_indice2][1][i2][j2][1] = schedule[t_indice2][1][i2][j2][1], schedule[t_indice1][1][i1][j1][1]
-                    st1_1 = next_st1_1
-                    st1_2 = next_st1_2
-                    st2_1 = next_st2_1
-                    st2_2 = next_st2_2
+                    schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                    students[s_indice1][1][i1] = next_st1_1
+                    students[s_indice1][1][i2] = next_st1_2
+                    students[s_indice2][1][i1] = next_st2_1
+                    students[s_indice2][1][i2] = next_st2_2
+                    accepted += 1
 
                 #そうでなければ、遷移するか否か、tempに基づき確率的に決定
                 else:
                     if exp(loss_diff / temp) > random.random():
-                        frame1, frame2 = frame2, frame1
-                        schedule[t_indice1][1][i1][j1][1], schedule[t_indice2][1][i2][j2][1] = schedule[t_indice2][1][i2][j2][1], schedule[t_indice1][1][i1][j1][1]
-                        st1_1 = next_st1_1
-                        st1_2 = next_st1_2
-                        st2_1 = next_st2_1
-                        st2_2 = next_st2_2
+                        schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                        students[s_indice1][1][i1] = next_st1_1
+                        students[s_indice1][1][i2] = next_st1_2
+                        students[s_indice2][1][i1] = next_st2_1
+                        students[s_indice2][1][i2] = next_st2_2
+                        accepted += 1
+
 
             #高3を含む2要素の交換
             elif flag == 2:
@@ -391,19 +429,25 @@ def simulated_annealing(schedule, students, teachers, lessons):
                 st1_2 = students[s_indice1][1][i2]
                 next_st1_1 = deepcopy(st1_1)
                 next_st1_2 = deepcopy(st1_2)
-                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
 
                 st2_1 = students[s_indice2][1][i1]
                 st2_2 = students[s_indice2][1][i2]
                 next_st2_1 = deepcopy(st2_1)
                 next_st2_2 = deepcopy(st2_2)
-                next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
 
                 st3_1 = students[s_indice3][1][i1]
                 st3_2 = students[s_indice3][1][i2]
                 next_st3_1 = deepcopy(st3_1)
                 next_st3_2 = deepcopy(st3_2)
-                next_st3_1[j1], next_st3_2[j2] = next_st3_2[j2], next_st3_1[j1]
+
+                if i1 == i2:
+                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                    next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
+                    next_st3_2[j1], next_st3_2[j2] = next_st3_2[j2], next_st3_2[j1]
+                else:
+                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+                    next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
+                    next_st3_1[j1], next_st3_2[j2] = next_st3_2[j2], next_st3_1[j1]
 
                 #teachersは遷移後も変化なし
 
@@ -416,26 +460,27 @@ def simulated_annealing(schedule, students, teachers, lessons):
 
                 #良化する場合は無条件に遷移
                 if loss_diff >= 0:
-                    frame1, frame2 = frame2, frame1
-                    schedule[t_indice1][1][i1][j1][1], frame3 = frame3, schedule[t_indice1][1][i1][j1][1]
-                    st1_1 = next_st1_1
-                    st1_2 = next_st1_2
-                    st2_1 = next_st2_1
-                    st2_2 = next_st2_2
-                    st3_1 = next_st3_1
-                    st3_2 = next_st3_2
+                    schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                    students[s_indice1][1][i1] = next_st1_1
+                    students[s_indice1][1][i2] = next_st1_2
+                    students[s_indice2][1][i1] = next_st2_1
+                    students[s_indice2][1][i2] = next_st2_2
+                    students[s_indice3][1][i1] = next_st3_1
+                    students[s_indice3][1][i2] = next_st3_2
+                    accepted += 1
 
                 #そうでなければ、遷移するか否か、tempに基づき確率的に決定
                 else:
                     if exp(loss_diff / temp) > random.random():
-                        frame1, frame2 = frame2, frame1
-                        schedule[t_indice1][1][i1][j1][1], frame3 = frame3, schedule[t_indice1][1][i1][j1][1]
-                        st1_1 = next_st1_1
-                        st1_2 = next_st1_2
-                        st2_1 = next_st2_1
-                        st2_2 = next_st2_2
-                        st3_1 = next_st3_1
-                        st3_2 = next_st3_2
+                        schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                        students[s_indice1][1][i1] = next_st1_1
+                        students[s_indice1][1][i2] = next_st1_2
+                        students[s_indice2][1][i1] = next_st2_1
+                        students[s_indice2][1][i2] = next_st2_2
+                        students[s_indice3][1][i1] = next_st3_1
+                        students[s_indice3][1][i2] = next_st3_2
+                        accepted += 1
+
 
             #非高3の移動
             elif flag == 3:
@@ -449,11 +494,15 @@ def simulated_annealing(schedule, students, teachers, lessons):
                 st1_2 = students[s_indice1][1][i2]
                 next_st1_1 = deepcopy(st1_1)
                 next_st1_2 = deepcopy(st1_2)
-                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+
+                if i1 == i2:
+                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                else:
+                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
 
                 #遷移後のteachers
                 next_teachers = deepcopy(teachers)
-                if h1 == 0:
+                if h1 == 0 and schedule[t_indice1][1][i1][j1][1] == ["free", "free", "free"]:
                     next_teachers[t_indice1][1][i1][j1] = "free"
                 if h2 == 0:
                     next_teachers[t_indice2][1][i2][j2] = "attend"
@@ -468,18 +517,24 @@ def simulated_annealing(schedule, students, teachers, lessons):
 
                 #良化する場合は無条件に遷移
                 if loss_diff >= 0:
-                    frame1, frame2 = frame2, frame1
-                    st1_1 = next_st1_1
-                    st1_2 = next_st1_2
+                    schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
+                    if h1 == 0:
+                        schedule[t_indice1][1][i1][j1][0], schedule[t_indice1][1][i1][j1][1] = schedule[t_indice1][1][i1][j1][1], schedule[t_indice1][1][i1][j1][0]
+                    students[s_indice1][1][i1] = next_st1_1
+                    students[s_indice1][1][i2] = next_st1_2
                     teachers = next_teachers
+                    accepted += 1
 
                 #そうでなければ、遷移するか否か、tempに基づき確率的に決定
                 else:
                     if exp(loss_diff / temp) > random.random():
-                        frame1, frame2 = frame2, frame1
-                        st1_1 = next_st1_1
-                        st1_2 = next_st1_2
+                        schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
+                        if h1 == 0:
+                            schedule[t_indice1][1][i1][j1][0], schedule[t_indice1][1][i1][j1][1] = schedule[t_indice1][1][i1][j1][1], schedule[t_indice1][1][i1][j1][0]
+                        students[s_indice1][1][i1] = next_st1_1
+                        students[s_indice1][1][i2] = next_st1_2
                         teachers = next_teachers
+                        accepted += 1
 
             #高3の移動
             elif flag == 4:
@@ -492,7 +547,11 @@ def simulated_annealing(schedule, students, teachers, lessons):
                 st1_2 = students[s_indice1][1][i2]
                 next_st1_1 = deepcopy(st1_1)
                 next_st1_2 = deepcopy(st1_2)
-                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+
+                if i1 == i2:
+                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                else:
+                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
 
                 #遷移後のteachers
                 next_teachers = deepcopy(teachers)
@@ -508,20 +567,20 @@ def simulated_annealing(schedule, students, teachers, lessons):
 
                 #良化する場合は無条件に遷移（高3の下のlockも移す）
                 if loss_diff >= 0:
-                    frame1, schedule[t_indice2][1][i2][j2][0] = schedule[t_indice2][1][i2][j2][0], frame1
-                    schedule[t_indice1][1][i1][j1][1], schedule[t_indice2][1][i2][j2][1] = schedule[t_indice2][1][i2][j2][1], schedule[t_indice1][1][i1][j1][1]
-                    st1_1 = next_st1_1
-                    st1_2 = next_st1_2
+                    schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                    students[s_indice1][1][i1] = next_st1_1
+                    students[s_indice1][1][i2] = next_st1_2
                     teachers = next_teachers
+                    accepted += 1
 
                 #そうでなければ、遷移するか否か、tempに基づき確率的に決定
                 else:
                     if exp(loss_diff / temp) > random.random():
-                        frame1, schedule[t_indice2][1][i2][j2][0] = schedule[t_indice2][1][i2][j2][0], frame1
-                        schedule[t_indice1][1][i1][j1][1], schedule[t_indice2][1][i2][j2][1] = schedule[t_indice2][1][i2][j2][1], schedule[t_indice1][1][i1][j1][1]
-                        st1_1 = next_st1_1
-                        st1_2 = next_st1_2
+                        schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                        students[s_indice1][1][i1] = next_st1_1
+                        students[s_indice1][1][i2] = next_st1_2
                         teachers = next_teachers
+                        accepted += 1
             
             #end if
 
@@ -531,4 +590,6 @@ def simulated_annealing(schedule, students, teachers, lessons):
     
     #end while
 
-    return (schedule, students)
+    print("rate to accept = " + str(accepted/all))
+
+    return (schedule, students, teachers)
