@@ -5,7 +5,6 @@ from random import choices
 from copy import deepcopy
 from math import exp
 
-
 #交換可能かの確認
 #check_move2回でも代用可能
 def check_exchange(i1, j1, i2, j2, frame1, frame2, t_indice1, t_indice2, students, lessons, schedule):
@@ -247,6 +246,10 @@ def part_of_loss_for_exchange(lessons, frame1, t1_name, s1_day1, s1_day2, frame2
     loss += loss_student_sparse(s1_day2)
     loss += loss_student_sparse(s2_day1)
     loss += loss_student_sparse(s2_day2)
+    loss += loss_student_count(s1_day1)
+    loss += loss_student_count(s1_day2)
+    loss += loss_student_count(s2_day1)
+    loss += loss_student_count(s2_day2)
 
     return loss
 
@@ -261,6 +264,8 @@ def part_of_loss_for_move(lessons, frame1, t1_name, s1_day1, s1_day2):
     loss += loss_hoperank(t1_name, s1_name, s1_subject, lessons)
     loss += loss_student_sparse(s1_day1)
     loss += loss_student_sparse(s1_day2)
+    loss += loss_student_count(s1_day1)
+    loss += loss_student_count(s1_day2)
 
     return loss
 
@@ -280,186 +285,189 @@ def part_of_loss_free_teacher(i1, j1, i2, j2, teachers):
 
 
 
-def simulated_annealing(schedule, students, teachers, lessons):
+def simulated_annealing(schedule, students, teachers, lessons, candidates, iteration, temp):
 
-    temp_max = 3000
-    temp_min = 0.1
-    interation = 1000
-    temp_diff = 0.99
+    """
+    temp_max = 2000
+    temp_min = 0.05
+    iteration = 5000
+    temp_diff = 0.97
     temp = temp_max
 
-    candidates = get_not_locked_frames(schedule)
-    length = len(candidates)
+    candidates = get_not_locked_frames(schedule) """
+    length = len(candidates) 
 
-    all = 0
-    accepted = 0
+    #while temp >= temp_min:
 
-    while temp >= temp_min:
+    print(str(temp) + " = " + str(all_losses(schedule, students, teachers, lessons)))
 
-        print(str(temp) + " = " + str(all_loss_hoperank(schedule, lessons)))
+    for count in range(iteration):
 
-        for count in range(interation):
+        #交換（移動）候補の取得
+        (i1, j1, h1, t_indice1, s_indice1, i2, j2, h2, t_indice2, s_indice2, flag) = state_to_change(schedule, students, lessons, candidates, length)
 
-            all += 1
+        t_name1 = schedule[t_indice1][0]
+        t_name2 = schedule[t_indice2][0]
 
-            #交換（移動）候補の取得
-            (i1, j1, h1, t_indice1, s_indice1, i2, j2, h2, t_indice2, s_indice2, flag) = state_to_change(schedule, students, lessons, candidates, length)
+        #1要素の交換
+        if flag == 0:
 
-            t_name1 = schedule[t_indice1][0]
-            t_name2 = schedule[t_indice2][0]
+            #scheduleの一部
+            frame1 = schedule[t_indice1][1][i1][j1][h1]
+            frame2 = schedule[t_indice2][1][i2][j2][h2]
+            
+            #遷移後のstudentsの一部
+            st1_1 = students[s_indice1][1][i1]
+            st1_2 = students[s_indice1][1][i2]
+            next_st1_1 = deepcopy(st1_1)
+            next_st1_2 = deepcopy(st1_2)
+            
 
-            #1要素の交換
-            if flag == 0:
+            st2_1 = students[s_indice2][1][i1]
+            st2_2 = students[s_indice2][1][i2]
+            next_st2_1 = deepcopy(st2_1)
+            next_st2_2 = deepcopy(st2_2)
 
-                #scheduleの一部
-                frame1 = schedule[t_indice1][1][i1][j1][h1]
-                frame2 = schedule[t_indice2][1][i2][j2][h2]
-                
-                #遷移後のstudentsの一部
-                st1_1 = students[s_indice1][1][i1]
-                st1_2 = students[s_indice1][1][i2]
-                next_st1_1 = deepcopy(st1_1)
-                next_st1_2 = deepcopy(st1_2)
-                
+            if i1 == i2:
+                next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
+            else:
+                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+                next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
 
-                st2_1 = students[s_indice2][1][i1]
-                st2_2 = students[s_indice2][1][i2]
-                next_st2_1 = deepcopy(st2_1)
-                next_st2_2 = deepcopy(st2_2)
+            #teachersは遷移後も変化なし
 
-                if i1 == i2:
-                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
-                    next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
-                else:
-                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
-                    next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
+            #損失の差分のみ計算
+            loss_cur = part_of_loss_for_exchange(lessons, frame1, t_name1, st1_1, st1_2, frame2, t_name2, st2_1, st2_2)
+            loss_nex = part_of_loss_for_exchange(lessons, frame2, t_name1, next_st1_1, next_st1_2, frame1, t_name2, next_st2_1, next_st2_2)
+            loss_diff = loss_cur - loss_nex
 
-                #teachersは遷移後も変化なし
+            #良化する場合は無条件に遷移
+            if loss_diff >= 0:
+                schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
+                students[s_indice1][1][i1] = next_st1_1
+                students[s_indice1][1][i2] = next_st1_2
+                students[s_indice2][1][i1] = next_st2_1
+                students[s_indice2][1][i2] = next_st2_2
 
-                #損失の差分のみ計算
-                loss_cur = part_of_loss_for_exchange(lessons, frame1, t_name1, st1_1, st1_2, frame2, t_name2, st2_1, st2_2)
-                loss_nex = part_of_loss_for_exchange(lessons, frame2, t_name1, next_st1_1, next_st1_2, frame1, t_name2, next_st2_1, next_st2_2)
-                loss_diff = loss_cur - loss_nex
-
-                #良化する場合は無条件に遷移
-                if loss_diff >= 0:
+            #そうでなければ、遷移するか否か、tempに基づき確率的に決定
+            else:
+                if exp(loss_diff / temp) > random.random():
                     schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
                     students[s_indice1][1][i1] = next_st1_1
                     students[s_indice1][1][i2] = next_st1_2
                     students[s_indice2][1][i1] = next_st2_1
                     students[s_indice2][1][i2] = next_st2_2
-                    accepted += 1
 
-                #そうでなければ、遷移するか否か、tempに基づき確率的に決定
-                else:
-                    if exp(loss_diff / temp) > random.random():
-                        schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
-                        students[s_indice1][1][i1] = next_st1_1
-                        students[s_indice1][1][i2] = next_st1_2
-                        students[s_indice2][1][i1] = next_st2_1
-                        students[s_indice2][1][i2] = next_st2_2
-                        accepted += 1
+        #高3を含む1要素の交換
+        elif flag == 1:
 
-            #高3を含む1要素の交換
-            elif flag == 1:
+            #schedule
+            frame1 = schedule[t_indice1][1][i1][j1][0]
+            frame2 = schedule[t_indice2][1][i2][j2][0]
+            
+            #遷移後のstudentsの一部
+            st1_1 = students[s_indice1][1][i1]
+            st1_2 = students[s_indice1][1][i2]
+            next_st1_1 = deepcopy(st1_1)
+            next_st1_2 = deepcopy(st1_2)
 
-                #schedule
-                frame1 = schedule[t_indice1][1][i1][j1][0]
-                frame2 = schedule[t_indice2][1][i2][j2][0]
-                
-                #遷移後のstudentsの一部
-                st1_1 = students[s_indice1][1][i1]
-                st1_2 = students[s_indice1][1][i2]
-                next_st1_1 = deepcopy(st1_1)
-                next_st1_2 = deepcopy(st1_2)
+            st2_1 = students[s_indice2][1][i1]
+            st2_2 = students[s_indice2][1][i2]
+            next_st2_1 = deepcopy(st2_1)
+            next_st2_2 = deepcopy(st2_2)
 
-                st2_1 = students[s_indice2][1][i1]
-                st2_2 = students[s_indice2][1][i2]
-                next_st2_1 = deepcopy(st2_1)
-                next_st2_2 = deepcopy(st2_2)
+            if i1 == i2:
+                next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
+            else:
+                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+                next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
 
-                if i1 == i2:
-                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
-                    next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
-                else:
-                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
-                    next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
+            #teachersは遷移後も変化なし
 
-                #teachersは遷移後も変化なし
+            #損失の差分のみ計算
+            loss_cur = part_of_loss_for_exchange(lessons, frame1, t_name1, st1_1, st1_2, frame2, t_name2, st2_1, st2_2)
+            loss_nex = part_of_loss_for_exchange(lessons, frame2, t_name1, next_st1_1, next_st1_2, frame1, t_name2, next_st2_1, next_st2_2)
+            loss_diff = loss_cur - loss_nex
 
-                #損失の差分のみ計算
-                loss_cur = part_of_loss_for_exchange(lessons, frame1, t_name1, st1_1, st1_2, frame2, t_name2, st2_1, st2_2)
-                loss_nex = part_of_loss_for_exchange(lessons, frame2, t_name1, next_st1_1, next_st1_2, frame1, t_name2, next_st2_1, next_st2_2)
-                loss_diff = loss_cur - loss_nex
+            #良化する場合は無条件に遷移（lockとfreeの入れ替えも行う）
+            if loss_diff >= 0:
+                schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                students[s_indice1][1][i1] = next_st1_1
+                students[s_indice1][1][i2] = next_st1_2
+                students[s_indice2][1][i1] = next_st2_1
+                students[s_indice2][1][i2] = next_st2_2
 
-                #良化する場合は無条件に遷移（lockとfreeの入れ替えも行う）
-                if loss_diff >= 0:
+            #そうでなければ、遷移するか否か、tempに基づき確率的に決定
+            else:
+                if exp(loss_diff / temp) > random.random():
                     schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
                     students[s_indice1][1][i1] = next_st1_1
                     students[s_indice1][1][i2] = next_st1_2
                     students[s_indice2][1][i1] = next_st2_1
                     students[s_indice2][1][i2] = next_st2_2
-                    accepted += 1
-
-                #そうでなければ、遷移するか否か、tempに基づき確率的に決定
-                else:
-                    if exp(loss_diff / temp) > random.random():
-                        schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
-                        students[s_indice1][1][i1] = next_st1_1
-                        students[s_indice1][1][i2] = next_st1_2
-                        students[s_indice2][1][i1] = next_st2_1
-                        students[s_indice2][1][i2] = next_st2_2
-                        accepted += 1
 
 
-            #高3を含む2要素の交換
-            elif flag == 2:
+        #高3を含む2要素の交換
+        elif flag == 2:
 
-                #返り値にない、3人目の生徒の情報を取得
-                s_name3 = schedule[t_indice2][1][i2][j2][1][1]
-                s_indice3 = get_index(s_name3, students)
+            #返り値にない、3人目の生徒の情報を取得
+            s_name3 = schedule[t_indice2][1][i2][j2][1][1]
+            s_indice3 = get_index(s_name3, students)
 
-                #scheduleの一部
-                frame1 = schedule[t_indice1][1][i1][j1][0]
-                frame2 = schedule[t_indice2][1][i2][j2][0]
-                frame3 = schedule[t_indice2][1][i2][j2][1]
-                
-                #遷移後のstudentsの一部
-                st1_1 = students[s_indice1][1][i1]
-                st1_2 = students[s_indice1][1][i2]
-                next_st1_1 = deepcopy(st1_1)
-                next_st1_2 = deepcopy(st1_2)
+            #scheduleの一部
+            frame1 = schedule[t_indice1][1][i1][j1][0]
+            frame2 = schedule[t_indice2][1][i2][j2][0]
+            frame3 = schedule[t_indice2][1][i2][j2][1]
+            
+            #遷移後のstudentsの一部
+            st1_1 = students[s_indice1][1][i1]
+            st1_2 = students[s_indice1][1][i2]
+            next_st1_1 = deepcopy(st1_1)
+            next_st1_2 = deepcopy(st1_2)
 
-                st2_1 = students[s_indice2][1][i1]
-                st2_2 = students[s_indice2][1][i2]
-                next_st2_1 = deepcopy(st2_1)
-                next_st2_2 = deepcopy(st2_2)
+            st2_1 = students[s_indice2][1][i1]
+            st2_2 = students[s_indice2][1][i2]
+            next_st2_1 = deepcopy(st2_1)
+            next_st2_2 = deepcopy(st2_2)
 
-                st3_1 = students[s_indice3][1][i1]
-                st3_2 = students[s_indice3][1][i2]
-                next_st3_1 = deepcopy(st3_1)
-                next_st3_2 = deepcopy(st3_2)
+            st3_1 = students[s_indice3][1][i1]
+            st3_2 = students[s_indice3][1][i2]
+            next_st3_1 = deepcopy(st3_1)
+            next_st3_2 = deepcopy(st3_2)
 
-                if i1 == i2:
-                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
-                    next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
-                    next_st3_2[j1], next_st3_2[j2] = next_st3_2[j2], next_st3_2[j1]
-                else:
-                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
-                    next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
-                    next_st3_1[j1], next_st3_2[j2] = next_st3_2[j2], next_st3_1[j1]
+            if i1 == i2:
+                next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+                next_st2_2[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_2[j1]
+                next_st3_2[j1], next_st3_2[j2] = next_st3_2[j2], next_st3_2[j1]
+            else:
+                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+                next_st2_1[j1], next_st2_2[j2] = next_st2_2[j2], next_st2_1[j1]
+                next_st3_1[j1], next_st3_2[j2] = next_st3_2[j2], next_st3_1[j1]
 
-                #teachersは遷移後も変化なし
+            #teachersは遷移後も変化なし
 
-                #損失の差分のみ計算
-                loss_cur = part_of_loss_for_exchange(lessons, frame1, t_name1, st1_1, st1_2, frame2, t_name2, st2_1, st2_2)
-                loss_cur += part_of_loss_for_move(lessons, frame3, t_name1, st3_1, st3_2)
-                loss_nex = part_of_loss_for_exchange(lessons, frame2, t_name1, next_st1_1, next_st1_2, frame1, t_name2, next_st2_1, next_st2_2)
-                loss_nex += part_of_loss_for_move(lessons, frame3, t_name2, next_st3_1, next_st3_2)
-                loss_diff = loss_cur - loss_nex
+            #損失の差分のみ計算
+            loss_cur = part_of_loss_for_exchange(lessons, frame1, t_name1, st1_1, st1_2, frame2, t_name2, st2_1, st2_2)
+            loss_cur += part_of_loss_for_move(lessons, frame3, t_name1, st3_1, st3_2)
+            loss_nex = part_of_loss_for_exchange(lessons, frame2, t_name1, next_st1_1, next_st1_2, frame1, t_name2, next_st2_1, next_st2_2)
+            loss_nex += part_of_loss_for_move(lessons, frame3, t_name2, next_st3_1, next_st3_2)
+            loss_diff = loss_cur - loss_nex
 
-                #良化する場合は無条件に遷移
-                if loss_diff >= 0:
+            #良化する場合は無条件に遷移
+            if loss_diff >= 0:
+                schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                students[s_indice1][1][i1] = next_st1_1
+                students[s_indice1][1][i2] = next_st1_2
+                students[s_indice2][1][i1] = next_st2_1
+                students[s_indice2][1][i2] = next_st2_2
+                students[s_indice3][1][i1] = next_st3_1
+                students[s_indice3][1][i2] = next_st3_2
+
+            #そうでなければ、遷移するか否か、tempに基づき確率的に決定
+            else:
+                if exp(loss_diff / temp) > random.random():
                     schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
                     students[s_indice1][1][i1] = next_st1_1
                     students[s_indice1][1][i2] = next_st1_2
@@ -467,129 +475,108 @@ def simulated_annealing(schedule, students, teachers, lessons):
                     students[s_indice2][1][i2] = next_st2_2
                     students[s_indice3][1][i1] = next_st3_1
                     students[s_indice3][1][i2] = next_st3_2
-                    accepted += 1
-
-                #そうでなければ、遷移するか否か、tempに基づき確率的に決定
-                else:
-                    if exp(loss_diff / temp) > random.random():
-                        schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
-                        students[s_indice1][1][i1] = next_st1_1
-                        students[s_indice1][1][i2] = next_st1_2
-                        students[s_indice2][1][i1] = next_st2_1
-                        students[s_indice2][1][i2] = next_st2_2
-                        students[s_indice3][1][i1] = next_st3_1
-                        students[s_indice3][1][i2] = next_st3_2
-                        accepted += 1
 
 
-            #非高3の移動
-            elif flag == 3:
+        #非高3の移動
+        elif flag == 3:
 
-                #scheduleの一部
-                frame1 = schedule[t_indice1][1][i1][j1][h1]
-                frame2 = schedule[t_indice2][1][i2][j2][h2]
-                
-                #遷移後のstudentsの一部
-                st1_1 = students[s_indice1][1][i1]
-                st1_2 = students[s_indice1][1][i2]
-                next_st1_1 = deepcopy(st1_1)
-                next_st1_2 = deepcopy(st1_2)
+            #scheduleの一部
+            frame1 = schedule[t_indice1][1][i1][j1][h1]
+            frame2 = schedule[t_indice2][1][i2][j2][h2]
+            
+            #遷移後のstudentsの一部
+            st1_1 = students[s_indice1][1][i1]
+            st1_2 = students[s_indice1][1][i2]
+            next_st1_1 = deepcopy(st1_1)
+            next_st1_2 = deepcopy(st1_2)
 
-                if i1 == i2:
-                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
-                else:
-                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+            if i1 == i2:
+                next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+            else:
+                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
 
-                #遷移後のteachers
-                next_teachers = deepcopy(teachers)
-                if h1 == 0 and schedule[t_indice1][1][i1][j1][1] == ["free", "free", "free"]:
-                    next_teachers[t_indice1][1][i1][j1] = "free"
-                if h2 == 0:
-                    next_teachers[t_indice2][1][i2][j2] = "attend"
-                
+            #遷移後のteachers
+            next_teachers = deepcopy(teachers)
+            if h1 == 0 and schedule[t_indice1][1][i1][j1][1] == ["free", "free", "free"]:
+                next_teachers[t_indice1][1][i1][j1] = "free"
+            if h2 == 0:
+                next_teachers[t_indice2][1][i2][j2] = "attend"
+            
 
-                #損失の差分のみ計算
-                loss_cur = part_of_loss_for_move(lessons, frame1, t_name1, st1_1, st1_2)
-                loss_cur += part_of_loss_free_teacher(i1, j1, i2, j2, teachers)
-                loss_nex = part_of_loss_for_move(lessons, frame1, t_name2, next_st1_1, next_st1_2)
-                loss_nex += part_of_loss_free_teacher(i1, j1, i2, j2, next_teachers)
-                loss_diff = loss_cur - loss_nex
+            #損失の差分のみ計算
+            loss_cur = part_of_loss_for_move(lessons, frame1, t_name1, st1_1, st1_2)
+            loss_cur += part_of_loss_free_teacher(i1, j1, i2, j2, teachers)
+            loss_nex = part_of_loss_for_move(lessons, frame1, t_name2, next_st1_1, next_st1_2)
+            loss_nex += part_of_loss_free_teacher(i1, j1, i2, j2, next_teachers)
+            loss_diff = loss_cur - loss_nex
 
-                #良化する場合は無条件に遷移
-                if loss_diff >= 0:
+            #良化する場合は無条件に遷移
+            if loss_diff >= 0:
+                schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
+                if h1 == 0:
+                    schedule[t_indice1][1][i1][j1][0], schedule[t_indice1][1][i1][j1][1] = schedule[t_indice1][1][i1][j1][1], schedule[t_indice1][1][i1][j1][0]
+                students[s_indice1][1][i1] = next_st1_1
+                students[s_indice1][1][i2] = next_st1_2
+                teachers = next_teachers
+
+            #そうでなければ、遷移するか否か、tempに基づき確率的に決定
+            else:
+                if exp(loss_diff / temp) > random.random():
                     schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
                     if h1 == 0:
                         schedule[t_indice1][1][i1][j1][0], schedule[t_indice1][1][i1][j1][1] = schedule[t_indice1][1][i1][j1][1], schedule[t_indice1][1][i1][j1][0]
                     students[s_indice1][1][i1] = next_st1_1
                     students[s_indice1][1][i2] = next_st1_2
                     teachers = next_teachers
-                    accepted += 1
 
-                #そうでなければ、遷移するか否か、tempに基づき確率的に決定
-                else:
-                    if exp(loss_diff / temp) > random.random():
-                        schedule[t_indice1][1][i1][j1][h1], schedule[t_indice2][1][i2][j2][h2] = schedule[t_indice2][1][i2][j2][h2], schedule[t_indice1][1][i1][j1][h1]
-                        if h1 == 0:
-                            schedule[t_indice1][1][i1][j1][0], schedule[t_indice1][1][i1][j1][1] = schedule[t_indice1][1][i1][j1][1], schedule[t_indice1][1][i1][j1][0]
-                        students[s_indice1][1][i1] = next_st1_1
-                        students[s_indice1][1][i2] = next_st1_2
-                        teachers = next_teachers
-                        accepted += 1
+        #高3の移動
+        elif flag == 4:
 
-            #高3の移動
-            elif flag == 4:
+            #scheduleの一部
+            frame1 = schedule[t_indice1][1][i1][j1][0]
+            
+            #遷移後のstudentsの一部
+            st1_1 = students[s_indice1][1][i1]
+            st1_2 = students[s_indice1][1][i2]
+            next_st1_1 = deepcopy(st1_1)
+            next_st1_2 = deepcopy(st1_2)
 
-                #scheduleの一部
-                frame1 = schedule[t_indice1][1][i1][j1][0]
-                
-                #遷移後のstudentsの一部
-                st1_1 = students[s_indice1][1][i1]
-                st1_2 = students[s_indice1][1][i2]
-                next_st1_1 = deepcopy(st1_1)
-                next_st1_2 = deepcopy(st1_2)
+            if i1 == i2:
+                next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
+            else:
+                next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
 
-                if i1 == i2:
-                    next_st1_2[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_2[j1]
-                else:
-                    next_st1_1[j1], next_st1_2[j2] = next_st1_2[j2], next_st1_1[j1]
+            #遷移後のteachers
+            next_teachers = deepcopy(teachers)
+            next_teachers[t_indice1][1][i1][j1] = "free"
+            next_teachers[t_indice2][1][i2][j2] = "attend"
+            
+            #損失の差分のみ計算
+            loss_cur = part_of_loss_for_move(lessons, frame1, t_name1, st1_1, st1_2)
+            loss_cur += part_of_loss_free_teacher(i1, j1, i2, j2, teachers)
+            loss_nex = part_of_loss_for_move(lessons, frame1, t_name2, next_st1_1, next_st1_2)
+            loss_nex += part_of_loss_free_teacher(i1, j1, i2, j2, next_teachers)
+            loss_diff = loss_cur - loss_nex
 
-                #遷移後のteachers
-                next_teachers = deepcopy(teachers)
-                next_teachers[t_indice1][1][i1][j1] = "free"
-                next_teachers[t_indice2][1][i2][j2] = "attend"
-                
-                #損失の差分のみ計算
-                loss_cur = part_of_loss_for_move(lessons, frame1, t_name1, st1_1, st1_2)
-                loss_cur += part_of_loss_free_teacher(i1, j1, i2, j2, teachers)
-                loss_nex = part_of_loss_for_move(lessons, frame1, t_name2, next_st1_1, next_st1_2)
-                loss_nex += part_of_loss_free_teacher(i1, j1, i2, j2, next_teachers)
-                loss_diff = loss_cur - loss_nex
+            #良化する場合は無条件に遷移（高3の下のlockも移す）
+            if loss_diff >= 0:
+                schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
+                students[s_indice1][1][i1] = next_st1_1
+                students[s_indice1][1][i2] = next_st1_2
+                teachers = next_teachers
 
-                #良化する場合は無条件に遷移（高3の下のlockも移す）
-                if loss_diff >= 0:
+            #そうでなければ、遷移するか否か、tempに基づき確率的に決定
+            else:
+                if exp(loss_diff / temp) > random.random():
                     schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
                     students[s_indice1][1][i1] = next_st1_1
                     students[s_indice1][1][i2] = next_st1_2
                     teachers = next_teachers
-                    accepted += 1
+        
+        #end if
 
-                #そうでなければ、遷移するか否か、tempに基づき確率的に決定
-                else:
-                    if exp(loss_diff / temp) > random.random():
-                        schedule[t_indice1][1][i1][j1], schedule[t_indice2][1][i2][j2] = schedule[t_indice2][1][i2][j2], schedule[t_indice1][1][i1][j1]
-                        students[s_indice1][1][i1] = next_st1_1
-                        students[s_indice1][1][i2] = next_st1_2
-                        teachers = next_teachers
-                        accepted += 1
-            
-            #end if
+    #end for
 
-        #end for
-
-        temp *= temp_diff
-    
     #end while
-
-    print("rate to accept = " + str(accepted/all))
 
     return (schedule, students, teachers)

@@ -258,3 +258,11 @@ def get_not_locked_frames(schedule):
                     not_locked_frames.append((t_indice, i, j))
 
     return not_locked_frames
+
+
+def not_lock_and_free(string):
+
+    if string != "free" and string != "lock":
+        return True
+    else:
+        return False

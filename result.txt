@@ -1,0 +1,95 @@
+tmax = 1000
+tmin = 0.001
+iteration = 2000
+diff = 0.98
+
+hope   = 337
+sparse =   0
+count  =   0
+free_t =  10
+
+time = 1520 ~ 1520 sec
+
+-------------------------------------------------
+
+tmax = 1000
+tmin = 0.001
+iteration = 5000
+diff = 0.95
+
+hope   = 339 332 338 330
+sparse =   0   0   0   0
+count  =   0   0   0   0
+free_t =  10  10  10  15
+
+time = 1400 ~ 1500 sec
+
+-------------------------------------------------
+
+tmax = 1000
+tmin = 0.001
+iteration = 10000
+diff = 0.95
+
+hope   = 326 326
+sparse =   0   0
+count  =   0   0
+free_t =   5  10
+
+time = 2800 ~ 2800 sec
+
+-------------------------------------------------
+
+tmax = 2000
+tmin = 0.001
+iteration = 1000
+diff = 0.96
+
+hope   = 342 347 354
+sparse =   0   0   0
+count  =   0   0   0
+free_t =  10  10  10
+
+time = 380 ~ 400 sec
+
+-------------------------------------------------
+
+tmax = 2000
+tmin = 0.001
+iteration = 5000
+diff = 0.96
+
+hope   = 329 325
+sparse =   0   0
+count  =   0   0
+free_t =  10  10
+
+time = 1950 ~ 2000 sec
+
+-------------------------------------------------
+
+tmax = 2000
+tmin = 0.001
+iteration = 5000
+diff = 0.98
+
+hope   = 329
+sparse =   0
+count  =   0
+free_t =  15
+
+time = 3765 ~ 3765 sec
+
+-------------------------------------------------
+
+tmax = 2000
+tmin = 0.005
+iteration = 5000
+diff = 0.97
+
+hope   = 326 335
+sparse =   0   0
+count  =   0   0
+free_t =  10  15
+
+time = 2269 ~ 2290 sec

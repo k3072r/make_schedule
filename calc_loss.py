@@ -46,7 +46,7 @@ def loss_student_sparse(day):
     a = -1
     b = -1
     flag = False #その日最初の授業をaに入れたか否か（aがNoneか否か）
-    loss = 10
+    loss = 20
     losses = 0
 
     for i in range(7):
@@ -79,10 +79,38 @@ def all_loss_student_sparse(students):
 
 
 
+def loss_student_count(day):
+
+    count = 0
+    loss = 10
+
+    for frame in day:
+        if frame != "free" and frame != "lock":
+            count += 1
+
+    if count >= 4:
+        return loss * loss
+    elif count >= 3:
+        return loss
+    else:
+        return 0
+
+def all_loss_student_count(students):
+
+    losses = 0
+
+    for student in students:
+        for day in student[1]:
+            losses += loss_student_count(day)
+
+    return losses
+
+
+
 
 def loss_free_teacher_exist(i, j, teachers):
 
-    loss = 10
+    loss = 5
 
     teacher_num = len(teachers)
 
@@ -114,3 +142,13 @@ def all_loss_free_teacher_exist(teachers):
             losses += loss_free_teacher_exist(i, j, teachers)
 
     return losses
+
+
+
+def all_losses(schedule, students, teachers, lessons):
+    loss = all_loss_student_sparse(students)
+    loss += all_loss_student_count(students)
+    loss += all_loss_free_teacher_exist(teachers)
+    loss += all_loss_hoperank(schedule, lessons)
+
+    return loss
