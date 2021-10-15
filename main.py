@@ -1,4 +1,3 @@
-from gui import conductMain
 import openpyxl as px
 import random
 import os

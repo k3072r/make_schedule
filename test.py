@@ -6,7 +6,7 @@ import time
 import random
 import numpy
 
-@profile
+#@profile
 def hoge():
     filepath = "test.xlsm"
     wb = px.load_workbook(filename=filepath, keep_vba=True)
