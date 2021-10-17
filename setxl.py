@@ -24,9 +24,10 @@ def set_students(wb, students):
             #end for
             i += 1
         #end for
+        row += 1
     #end for
 
-    wb.save
+    wb.save("result.xlsm")
 
 
 
@@ -72,4 +73,4 @@ def set_schedule(wb, schedule):
         row += 2
     #end for
 
-    wb.save
+    wb.save("result.xlsm")

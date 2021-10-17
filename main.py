@@ -18,10 +18,9 @@ def main():
 
     t1 = time.time()
 
-    global bar_value
+    global bar_value, text
 
-    filepath = "test.xlsm"
-    wb = px.load_workbook(filename=filepath, keep_vba=True)
+    wb = px.load_workbook(filename=text, keep_vba=True)
     schedule = getxl.get_schedule(wb)
     lessons = getxl.get_lessons(wb)
     students = getxl.get_students(wb)
@@ -167,8 +166,6 @@ def main():
     # end while
     bar_value += 1
 
-    setxl.set_schedule(wb, schedule)
-    setxl.set_students(wb, students)
 
     loss1 = calc_loss.all_loss_hoperank(schedule, lessons)
     loss2 = calc_loss.all_loss_student_sparse(students)
@@ -182,7 +179,7 @@ def main():
 
     temp_max = 2000
     temp_min = 0.05
-    iteration = 5
+    iteration = 1000
     temp_diff = 0.97
     temp = temp_max
     candidates = make.get_not_locked_frames(schedule)
@@ -213,7 +210,7 @@ def main():
     setxl.set_schedule(wb, schedule)
     setxl.set_students(wb, students)
 
-    root_main.destroy()
+    root_main.quit()
 
 
 
@@ -325,14 +322,10 @@ def filedialog_clicked():
 
 # 実行ボタン押下時の実行関数
 def conductMain():
+    global text
     text = ""
 
-    filePath = entry1.get()
-    if filePath:
-        text += "ファイルパス：" + filePath
-
-    if text:
-        root.quit()
+    text = entry1.get()
 
     root.destroy()
 
@@ -359,6 +352,7 @@ IFileLabel.pack(side=LEFT)
 entry1 = StringVar()
 IFileEntry = ttk.Entry(frame1, textvariable=entry1, width=30)
 IFileEntry.pack(side=LEFT)
+filepath = entry1.get()
 
 # 「ファイル参照」ボタンの作成
 IFileButton = ttk.Button(frame1, text="参照", command=filedialog_clicked)
