@@ -299,7 +299,7 @@ def simulated_annealing(schedule, students, teachers, lessons, candidates, itera
 
     #while temp >= temp_min:
 
-    print(str(temp) + " = " + str(all_losses(schedule, students, teachers, lessons)))
+    #print(str(temp) + " = " + str(all_losses(schedule, students, teachers, lessons)))
 
     for count in range(iteration):
 

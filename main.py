@@ -15,17 +15,20 @@ from tkinter import filedialog
 
 def main():
 
-    t1 = time.time()
-
-    global bar_value, text
+    global bar_var, bar_value, text, label_var
 
     wb = px.load_workbook(filename=text, keep_vba=True)
+    bar_var.set(70)
     schedule = getxl.get_schedule(wb)
+    bar_var.set(140)
     lessons = getxl.get_lessons(wb)
+    bar_var.set(210)
     students = getxl.get_students(wb)
+    bar_var.set(280)
     student_free_counts = getxl.student_free_count(students)
     sorted_free_count = getxl.free_count_bubble_sort(student_free_counts)
     teachers = getxl.get_teachers(wb)
+    bar_var.set(350)
     evacuations = []
 
     #講師の出勤可能なコマを取得
@@ -36,9 +39,10 @@ def main():
         free_list = make.get_schedule_free_list(days)
         teachers_free_days.append([name, free_list])
     
-    bar_value += 1
+    
 
-
+    bar_var.set(0)
+    label_var.set("初期解を生成中...")
 
 
     #高3を最優先
@@ -163,8 +167,6 @@ def main():
         # end for
 
     # end while
-    bar_value += 1
-
 
     loss1 = calc_loss.all_loss_hoperank(schedule, lessons)
     loss2 = calc_loss.all_loss_student_sparse(students)
@@ -183,12 +185,21 @@ def main():
     temp = temp_max
     candidates = make.get_not_locked_frames(schedule)
 
+    sum_time = 0
+
     while temp >= temp_min:
+
+        t1 = time.time()
 
         (schedule, students, teachers) = simulated_annealing(schedule, students, teachers, lessons, candidates, iteration, temp)
         temp *= temp_diff
         bar_value += 1
         bar_var.set(bar_value)
+
+        t2 = time.time() - t1
+        sum_time += t2
+        prediction = int((sum_time / bar_value) * (348 - bar_value))
+        label_var.set("最適解を探索中...　残り時間：" + str(prediction) + "sec")
 
     #end while
 
@@ -206,111 +217,19 @@ def main():
 
     print("time = " + str(time.time() - t1) + "sec")
 
+    label_var.set("Excelファイルに書き出し中...")
+    bar_var.set(0)
+
     setxl.set_schedule(wb, schedule)
+    bar_var.set(175)
     setxl.set_students(wb, students)
+    bar_var.set(350)
 
     root_main.quit()
 
 
 
 
-# progressbarの表示用変数の値を変える関数
-def getxl_progress_increment():
-    global getxl_progress
-    getxl_progress.set(getxl_progress.get() + 1)
-
-def sa_progress_increment():
-    global sa_progress
-    sa_progress.set(sa_progress.get() + 1)
-
-
-
-
-#実行押下後のGUIの処理
-def gui_execute():
-    #既存のフレームの消去
-    frame1.destroy()
-    frame2.destroy()
-    frame3.tkraise()
-
-    #プログレスバー
-    bar = ttk.Progressbar(frame3, orient="horizontal", length=500, mode="determinate", variable=getxl_progress, maximum=8)
-    bar.pack()
-
-    #ラベル
-    label = Label(frame3, textvariable="Excelの情報を取得中…")
-    label.pack()
-
-
-
-    
-
-
-
-#エクセル取得から初期解生成への切り替え
-def gui_toInitial():
-
-    frame3.destroy()
-    frame4.grid(row=2, column=1, sticky=E)
-
-    #プログレスバー
-    bar = ttk.Progressbar(frame4, orient="horizontal", length=500, mode="indeterminate", maximum=8)
-    bar.pack()
-
-    #ラベル
-    label = Label(frame4, textvariable="初期解を生成中…")
-    label.pack()
-
-
-#初期解生成からSimulated Annealingへの切り替え
-def gui_toSA():
-
-    frame4.destroy()
-    frame5.grid(row=2, column=1, sticky=E)
-
-    #プログレスバー
-    bar = ttk.Progressbar(frame5, orient="horizontal", length=500, mode="determinate", variable= sa_progress, maximum= 348)
-    bar.pack()
-
-    #温度を表すラベル
-    temp_label = Label(frame5, textvariable=str(sa_progress.get()))
-    temp_label.pack()
-
-
-
-
-
-
-
-
-
-def show_gui2():
-
-    global root2, frame3, frame4, frame5, getxl_progress, sa_progress, now_show_gui
-
-    # rootの作成
-    root2 = Tk()
-    root2.title("サンプル")
-
-    # プログレスバーの進捗を表すグローバル変数
-    getxl_progress = IntVar(value=0)
-    sa_progress = IntVar(value=0)
-
-    #getxl中に表示するフレーム
-    frame3 = ttk.Frame(root, padding=10)
-    frame3.grid(row=2, column=1, sticky=E)
-
-    #初期解生成中に表示するフレーム
-    frame4 = ttk.Frame(root, padding=10)
-    frame4.grid(row=2, column=1, sticky=E)
-
-    #Simulated Annealing中に表示するフレーム
-    frame5 = ttk.Frame(root, padding=10)
-    frame5.grid(row=2, column=1, sticky=E)
-
-    root.mainloop()
-
-    now_show_gui = True
 
 # ファイル指定の関数
 def filedialog_clicked():
@@ -322,11 +241,11 @@ def filedialog_clicked():
 # 実行ボタン押下時の実行関数
 def conductMain():
     global text
-    text = ""
 
-    text = entry1.get()
+    #text = entry1.get()
 
-    root.destroy()
+    if text != "":
+        root.destroy()
 
 #プログレスバーの進捗更新用関数
 def refresh_bar():
@@ -351,7 +270,7 @@ IFileLabel.pack(side=LEFT)
 entry1 = StringVar()
 IFileEntry = ttk.Entry(frame1, textvariable=entry1, width=30)
 IFileEntry.pack(side=LEFT)
-filepath = entry1.get()
+text = "test.xlsm"   # 参照したパス
 
 # 「ファイル参照」ボタンの作成
 IFileButton = ttk.Button(frame1, text="参照", command=filedialog_clicked)
@@ -375,21 +294,29 @@ frame3 = ttk.Frame(root, padding=10)
 
 root.mainloop()
 
-thread1 = threading.Thread(target=main)
-thread1.start()
+if text != "":
 
-#実行中のroot
-root_main = Tk()
-root_main.title("探索中...")
+    thread1 = threading.Thread(target=main)
+    thread1.start()
 
-# プログレスバーの進捗を表すグローバル変数
-bar_value = 0
-bar_var = IntVar(value= bar_value)
+    #実行中のroot
+    root_main = Tk()
+    root_main.title("探索中...")
 
-#プログレスバー
-bar = ttk.Progressbar(root_main, orient="horizontal", length=500, mode="determinate", variable=bar_var, maximum=350)
-bar.pack()
+    # プログレスバーの進捗を表すグローバル変数
+    bar_value = 0
+    bar_var = IntVar(value= bar_value)
 
-#refresh_bar()
+    #プログレスバー
+    bar = ttk.Progressbar(root_main, orient="horizontal", length=500, mode="determinate", variable=bar_var, maximum=350)
+    bar.pack()
 
-root_main.mainloop()
+    #ラベル
+    label_var = StringVar()
+    label_var.set("Excelデータを取得中...")
+    label = ttk.Label(root_main, textvariable= label_var)
+    label.pack()
+
+    #refresh_bar()
+
+    root_main.mainloop()
