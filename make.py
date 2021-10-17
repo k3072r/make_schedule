@@ -1,7 +1,6 @@
 from getxl import student_free_count
 import random
 import copy
-import teacher as te
 
 #index number取得
 def get_index(name, lists):
