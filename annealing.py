@@ -93,7 +93,7 @@ def state_to_change(schedule, students, lessons, candidates, length):
 
         #高3を含むか否かで場合分け
         #両方高3の場合
-        if schedule[t_indice1][1][i1][j1][0][0] == "新高３" and schedule[t_indice2][1][i2][j2][0][0] == "新高３":
+        if (schedule[t_indice1][1][i1][j1][0][0] == "新高３" or schedule[t_indice1][1][i1][j1][0][0] == "高３") and (schedule[t_indice2][1][i2][j2][0][0] == "新高３" or schedule[t_indice2][1][i2][j2][0][0] == "高３"):
 
             frame1 = schedule[t_indice1][1][i1][j1][0]
             frame2 = schedule[t_indice2][1][i2][j2][0]
@@ -106,7 +106,7 @@ def state_to_change(schedule, students, lessons, candidates, length):
 
 
         #片方が高3の場合1
-        elif schedule[t_indice1][1][i1][j1][0][0] == "新高３":
+        elif schedule[t_indice1][1][i1][j1][0][0] == "新高３" or schedule[t_indice1][1][i1][j1][0][0] == "高３":
 
             frame1 = schedule[t_indice1][1][i1][j1][0]
             frame2 = schedule[t_indice2][1][i2][j2][0]
@@ -144,7 +144,7 @@ def state_to_change(schedule, students, lessons, candidates, length):
                 
 
         #片方が高3の場合2
-        elif schedule[t_indice2][1][i2][j2][0][0] == "新高３":
+        elif schedule[t_indice2][1][i2][j2][0][0] == "新高３" or schedule[t_indice2][1][i2][j2][0][0] == "高３":
 
             frame1 = schedule[t_indice1][1][i1][j1][0]
             frame2 = schedule[t_indice2][1][i2][j2][0]

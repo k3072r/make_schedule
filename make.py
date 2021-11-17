@@ -177,7 +177,7 @@ def random_move(cur_i, cur_j, cur_h, cur_t_i, student_indice, lessons, schedule,
     subject = schedule[cur_t_i][1][cur_i][cur_j][cur_h][2]
 
     high3 = False
-    if schedule[cur_t_i][1][cur_i][cur_j][cur_h][0] == "高3":
+    if schedule[cur_t_i][1][cur_i][cur_j][cur_h][0] == "高3" or schedule[cur_t_i][1][cur_i][cur_j][cur_h][0] == "新高3":
         high3 = True
 
     moved = False

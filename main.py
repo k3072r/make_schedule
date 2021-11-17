@@ -242,7 +242,7 @@ def filedialog_clicked():
 def conductMain():
     global text
 
-    #text = entry1.get()
+    text = entry1.get()
 
     if text != "":
         root.destroy()
@@ -270,7 +270,7 @@ IFileLabel.pack(side=LEFT)
 entry1 = StringVar()
 IFileEntry = ttk.Entry(frame1, textvariable=entry1, width=30)
 IFileEntry.pack(side=LEFT)
-text = "test.xlsm"   # 参照したパス
+text = ""   # 参照したパス
 
 # 「ファイル参照」ボタンの作成
 IFileButton = ttk.Button(frame1, text="参照", command=filedialog_clicked)
